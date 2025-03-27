@@ -1,0 +1,108 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include <sstream>
+
+using namespace std;
+
+class LoviaInterpreter {
+private:
+    unordered_map<string, int> variables;
+
+public:
+    void execute(const vector<string>& lines) {
+        for (size_t i = 0; i < lines.size(); i++) {
+            string line = lines[i];
+            stringstream ss(line);
+            string command;
+            ss >> command;
+
+            if (command == "say") {
+                string output;
+                getline(ss, output);
+                output = output.substr(1); // Remove leading space
+                cout << output << endl;
+            }
+            else if (command == "set") {
+                string varName, to;
+                int value;
+                ss >> varName >> to >> value;
+                if (to == "to") {
+                    variables[varName] = value;
+                }
+            }
+            else if (command == "ask") {
+                string varName;
+                ss >> varName;
+                cout << "Enter value for " << varName << ": ";
+                int value;
+                cin >> value;
+                variables[varName] = value;
+            }
+            else if (command == "if") {
+                string conditionVar, comparator;
+                int conditionValue;
+                ss >> conditionVar >> comparator >> conditionValue;
+                
+                bool conditionMet = false;
+                if (variables.find(conditionVar) != variables.end()) {
+                    int varValue = variables[conditionVar];
+                    if (comparator == "more_than" && varValue > conditionValue) conditionMet = true;
+                    else if (comparator == "less_than" && varValue < conditionValue) conditionMet = true;
+                    else if (comparator == "equals" && varValue == conditionValue) conditionMet = true;
+                }
+                
+                if (!conditionMet) {
+                    while (i < lines.size() && lines[i] != "else:" && lines[i] != ":end") {
+                        i++;
+                    }
+                }
+            }
+            else if (command == "repeat") {
+                int times;
+                string temp;
+                ss >> times >> temp;
+                if (temp == "times:") {
+                    vector<string> loopBody;
+                    i++; // Move to next line
+                    while (i < lines.size() && lines[i] != ":end") {
+                        loopBody.push_back(lines[i]);
+                        i++;
+                    }
+                    for (int j = 0; j < times; j++) {
+                        execute(loopBody);
+                    }
+                }
+            }
+        }
+    }
+
+    void executeFromFile(const string& filename) {
+        ifstream file(filename);
+        if (!file) {
+            cerr << "Error: Could not open file " << filename << endl;
+            return;
+        }
+        vector<string> lines;
+        string line;
+        while (getline(file, line)) {
+            lines.push_back(line);
+        }
+        file.close();
+        execute(lines);
+    }
+};
+
+int main(int argc, char* argv[]) {
+    LoviaInterpreter interpreter;
+    
+    if (argc > 1) {
+        interpreter.executeFromFile(argv[1]);
+    } else {
+        cout << "Usage: ./lovia <filename.lovia>" << endl;
+    }
+    
+    return 0;
+}

@@ -39,3 +39,6 @@ else:
 
 ## Contribute 💡
 Lovia is open-source! Feel free to contribute and improve it.
+
+
+
